@@ -55,6 +55,8 @@ async def check_account(page, username, state):
     print(f"Kontroluji účet: @{username}")
     url = f"https://www.tiktok.com/@{username}"
     
+    new_videos_found = 0
+    
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=60000)
         await page.wait_for_timeout(6000) # Počkáme na načtení prvků stránky
@@ -63,8 +65,6 @@ async def check_account(page, username, state):
         links = await page.locator('a[href*="/video/"]').evaluate_all(
             """els => els.map(e => e.href)"""
         )
-
-        new_videos_found = 0
 
         for link in links:
             if "/video/" in link:
@@ -77,7 +77,7 @@ async def check_account(page, username, state):
                         
                         remember_video(state, username, video_id)
                         
-                        # Odeslání zprávy na Telegram
+                        # Odeslání zprávy na Telegram o novém videu
                         video_url = f"https://www.tiktok.com/@{username}/video/{video_id}"
                         send_telegram(
                             f"🎬 Nové TikTok video!\n\n"
@@ -91,6 +91,8 @@ async def check_account(page, username, state):
     except Exception as e:
         print(f"  ❌ Chyba při kontrole @{username}: {e}")
 
+    return new_videos_found
+
 
 async def main():
     state = load_state()
@@ -101,6 +103,8 @@ async def main():
     print(f"Sledovaných účtů: {len(WATCHED_ACCOUNTS)}")
     print()
 
+    total_new_videos = 0
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page(
@@ -108,12 +112,24 @@ async def main():
         )
 
         for username in WATCHED_ACCOUNTS:
-            await check_account(page, username, state)
+            new_found = await check_account(page, username, state)
+            total_new_videos += new_found
+            # Menší pauza mezi účty, aby TikTok botu nezablokoval přístup
             await asyncio.sleep(3)
 
         await browser.close()
 
     save_state(state)
+    
+    # Odeslání souhrnné zprávy o proběhlé kontrole na Telegram
+    try:
+        send_telegram(
+            f"🤖 Právě jsem zkontroloval všech {len(WATCHED_ACCOUNTS)} účtů.\n"
+            f"✨ Nových videí nalezeno: {total_new_videos}"
+        )
+    except Exception as e:
+        print(f"  ❌ Chyba při odesílání souhrnu na Telegram: {e}")
+
     print("\n✅ Kontrola všech účtů dokončena a stav byl uložen do state.json.")
 
 
