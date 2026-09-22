@@ -2,8 +2,8 @@ name: TikTok Monitor Bot
 
 on:
   schedule:
-    # Spustí se každou hodinu, pondělí až neděle
-    - cron: '0 * * * *'
+    # Spustí se každých 30 minut, pondělí až neděle
+    - cron: '*/30 * * * *'
   workflow_dispatch: # Umožňuje ruční spuštění tlačítkem
 
 jobs:
