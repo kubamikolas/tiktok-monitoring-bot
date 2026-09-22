@@ -1,0 +1,7 @@
+yfinance
+python-dotenv
+python-telegram-bot
+feedparser
+requests
+playwright
+beautifulsoup4
