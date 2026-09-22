@@ -59,7 +59,7 @@ async def check_account(page, username, state):
         await page.goto(url, wait_until="domcontentloaded", timeout=60000)
         await page.wait_for_timeout(6000) # Počkáme na načtení prvků stránky
         
-        # Získání odkazů na videa pomocí Playwrightu (stejně jako v test_playwright.py)
+        # Získání odkazů na videa pomocí Playwrightu
         links = await page.locator('a[href*="/video/"]').evaluate_all(
             """els => els.map(e => e.href)"""
         )
@@ -67,11 +67,10 @@ async def check_account(page, username, state):
         new_videos_found = 0
 
         for link in links:
-            # Odkaz vypadá např. jako: https://www.tiktok.com/@uzivatel/video/71234567890
             if "/video/" in link:
                 parts = link.split("/video/")
                 if len(parts) == 2:
-                    video_id = parts[1].split("?")[0] # Oříznutí případných parametrů
+                    video_id = parts[1].split("?")[0]
                     
                     if is_new_video(state, username, video_id):
                         print(f"  -> Nalezeno nové video ID: {video_id}")
@@ -99,18 +98,17 @@ async def main():
     print("================================")
     print(" TikTok Auto Monitor Bot")
     print("================================")
-    print(f"Sledovaných účtů: {len(WATCHLED_ACCOUNTS)}")
+    print(f"Sledovaných účtů: {len(WATCHED_ACCOUNTS)}")
     print()
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True) # Headless=True spustí prohlížeč na pozadí
+        browser = await p.chromium.launch(headless=True)
         page = await browser.new_page(
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"
         )
 
-        for username in WATCHLED_ACCOUNTS:
+        for username in WATCHED_ACCOUNTS:
             await check_account(page, username, state)
-            # Menší pauza mezi účty, aby TikTok botu nezablokoval přístup
             await asyncio.sleep(3)
 
         await browser.close()
